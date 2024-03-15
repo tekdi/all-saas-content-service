@@ -10,9 +10,7 @@ services:
     networks:
       - ai-network
     environment:
-      - MONGODB_URL=
-      - ALL_LC_API_URL=
-      - SERVER_URL=
+      - .env
 
 networks:
   ai-network:
