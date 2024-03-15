@@ -2,7 +2,7 @@ name: DEV DEPLOYMENT
 
 on:
   push:
-    branches: [  ]
+    branches: [ all-1.0 ]
 
 jobs:
   build:
