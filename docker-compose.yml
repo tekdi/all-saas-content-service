@@ -1,0 +1,19 @@
+version: '3'
+services:
+  content-service-app:
+    build:
+      context: .
+    ports:
+      - '3008:3008'
+    container_name: content-service
+    restart: always
+    networks:
+      - ai-network
+    environment:
+      - MONGODB_URL=
+      - ALL_LC_API_URL=
+      - SERVER_URL=
+
+networks:
+  ai-network:
+    driver: bridge
