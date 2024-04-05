@@ -202,7 +202,20 @@ export class contentController {
         try {
             const skip = (page - 1) * limit;
             const { data } = await this.contentService.pagination(skip, limit, type, collectionId);
-            return response.status(HttpStatus.OK).send({ status: 'success', data });
+
+            let language = data[0].language;
+
+            let totalSyllableCount = 0;
+            if (language === "en") {
+                data.forEach((contentObject: any) => {
+                    totalSyllableCount += contentObject.contentSourceData[0].phonemes.length;
+                });
+            } else {
+                data.forEach((contentObject: any) => {
+                    totalSyllableCount += contentObject.contentSourceData[0].syllableCount;
+                });
+            }
+            return response.status(HttpStatus.OK).send({ status: 'success', data, totalSyllableCount: totalSyllableCount });
         } catch (error) {
             return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
                 status: "error",
