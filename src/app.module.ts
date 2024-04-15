@@ -14,7 +14,7 @@ import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: 5000
+      timeout: 5000,
     }),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -22,18 +22,10 @@ import { HttpModule } from '@nestjs/axios';
     MongooseModule.forRoot(process.env.MONGODB_URL),
     MongooseModule.forFeature([
       { name: content.name, schema: contentSchema },
-      { name: collection.name, schema: collectionDbSchema }
-    ])
+      { name: collection.name, schema: collectionDbSchema },
+    ]),
   ],
-  controllers: [
-    AppController,
-    contentController,
-    CollectionController],
-  providers: [
-    AppService,
-    contentService,
-    CollectionService
-  ],
+  controllers: [AppController, contentController, CollectionController],
+  providers: [AppService, contentService, CollectionService],
 })
-
-export class AppModule { }
+export class AppModule {}
