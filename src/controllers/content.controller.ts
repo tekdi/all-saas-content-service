@@ -8,24 +8,14 @@ import {
   Post,
   Put,
   Query,
-  Req,
   Res,
 } from '@nestjs/common';
-import { content } from '../schemas/content.schema';
 import { contentService } from '../services/content.service';
 import { CollectionService } from '../services/collection.service';
 import { FastifyReply } from 'fastify';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, lastValueFrom, map } from 'rxjs';
-import {
-  ApiBody,
-  ApiExcludeEndpoint,
-  ApiForbiddenResponse,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { lastValueFrom, map } from 'rxjs';
+import { ApiTags } from '@nestjs/swagger';
 import * as splitGraphemes from 'split-graphemes';
 
 @ApiTags('content')
