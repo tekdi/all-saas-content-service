@@ -92,6 +92,16 @@ export class collection {
 
     @Prop({ default: now() })
     updatedAt: Date;
+
+    @Prop({ type: String, required: true })
+    @IsOptional()
+    @IsString()
+    createdBy: string;
+
+    @Prop({ type: String, required: true })
+    @IsOptional()
+    @IsString()
+    updatedBy: string;
 }
 
 export type collectionDocument = collection & Document;
