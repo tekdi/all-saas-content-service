@@ -1083,6 +1083,283 @@ export class contentService {
         // }
     }
 
+    async searchByFilter(syllableList, syllableCount, wordCount, totalOrthoComplexity, totalPhonicComplexity, meanComplexity, language, contentType, limit, contentId, collectionId, tags): Promise<any> {
+        if (syllableList == undefined || syllableList.length == 0) {
+            syllableList = []
+        }
+
+        if (tags == undefined || tags.length == 0) {
+            tags = []
+        }
+
+        if (language !== 'en') {
+
+            let mileStoneQuery = [];
+            let cLevelQuery: any = [];
+
+
+            let contentQueryParam = [];
+            let complexityQueryParam = [];
+
+            if (syllableCount !== undefined && Object.keys(syllableCount).length != 0) {
+                contentQueryParam.push({ syllableCount: syllableCount });
+            }
+
+            if (wordCount !== undefined && Object.keys(wordCount).length != 0) {
+                contentQueryParam.push({ wordCount: wordCount });
+            }
+
+            if (totalOrthoComplexity !== undefined && Object.keys(totalOrthoComplexity).length != 0) {
+                complexityQueryParam.push({ totalOrthoComplexity: totalOrthoComplexity });
+            }
+
+            if (totalPhonicComplexity !== undefined && Object.keys(totalPhonicComplexity).length != 0) {
+                complexityQueryParam.push({ totalPhonicComplexity: totalPhonicComplexity });
+            }
+
+            if (meanComplexity !== undefined && Object.keys(meanComplexity).length != 0) {
+                complexityQueryParam.push({ meanPhonicComplexity: meanComplexity });
+            }
+
+            cLevelQuery = contentQueryParam;
+
+            for (let complexityQueryParamEle of complexityQueryParam) {
+                mileStoneQuery.push(complexityQueryParamEle);
+            }
+
+            let searchChar = syllableList.join("|");
+
+            let unicodeArray = [];
+            for (let syllableListEle of syllableList) {
+                let unicodeCombination = '';
+                for (const [index, syllable] of syllableListEle.split('').entries()) {
+                    let unicodeValue = "\\" + "u0" + syllable.charCodeAt(0).toString(16);
+                    unicodeCombination += index !== 0 ? '+' : '';
+                    unicodeCombination += unicodeValue;
+                }
+                unicodeArray.push(unicodeCombination);
+            }
+
+            const syllableRegexPattern = new RegExp(`\\B(${searchChar})`, 'gu');
+
+            let wordsArr = [];
+            let query: any = {};
+
+            query = {
+                "contentType": contentType,
+                "contentSourceData": {
+                    "$elemMatch": {
+                        "language": language
+                    }
+                }
+            }
+
+            if (mileStoneQuery !== undefined && mileStoneQuery.length > 0) {
+                for (let mileStoneQueryEle of mileStoneQuery) {
+                    let ObjectKey = Object.keys(mileStoneQueryEle)[0];
+                    query.contentSourceData["$elemMatch"][ObjectKey] = Object.values(mileStoneQueryEle)[0]
+                }
+            }
+
+            if (cLevelQuery !== undefined && cLevelQuery.length > 0) {
+                for (let cLevelQueryEle of cLevelQuery) {
+                    let ObjectKey = Object.keys(cLevelQueryEle)[0];
+                    query.contentSourceData["$elemMatch"][ObjectKey] = Object.values(cLevelQueryEle)[0]
+                }
+            }
+
+            if (syllableList != undefined && syllableList.length > 0) {
+                query.contentSourceData["$elemMatch"]["text"] = { $regex: syllableRegexPattern }
+            }
+
+            if (contentType === 'char') {
+                query.contentType = "Word"
+            }
+
+            if (contentId !== undefined) {
+                query.contentId = contentId;
+            }
+
+            if (collectionId !== undefined) {
+                query.collectionId = collectionId;
+            }
+
+            if (tags?.length > 0) {
+                query.tags = { $all: tags };
+            }
+
+            await this.content.aggregate([
+                {
+                    $addFields: {
+                        "contentSourceData": {
+                            $map: {
+                                input: "$contentSourceData",
+                                as: "elem",
+                                in: {
+                                    $mergeObjects: [
+                                        "$$elem",
+                                        {
+                                            "syllableCountArray": { $objectToArray: "$$elem.syllableCountMap" }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    $match: query
+                },
+                { $sample: { size: limit } }
+            ]).exec().then((doc) => {
+                for (let docEle of doc) {
+                    let text: string = docEle.contentSourceData[0]['text'].trim();
+                    let matchedChar = text.match(new RegExp(`(${unicodeArray.join('|')})`, 'gu'));
+                    wordsArr.push({ ...docEle, matchedChar: Array.from(new Set(matchedChar)) });
+                }
+            })
+
+
+            if (wordsArr.length > 0) {
+
+                let textSet = new Set();
+
+                for (let wordsArrEle of wordsArr) {
+                    for (let contentSourceDataEle of wordsArrEle.contentSourceData) {
+                        if (contentSourceDataEle.language === language) {
+                            textSet.add(contentSourceDataEle.text.trim());
+                        }
+                    }
+                }
+
+                if (textSet.size !== limit) {
+
+                    for (let textSetEle of textSet) {
+                        let repeatCounter = 0;
+                        let deleteFlag = false;
+                        for (let [wordArrEleIndex, wordsArrEle] of wordsArr.entries()) {
+
+                            if (wordsArrEle !== undefined) {
+                                for (let contentSourceDataEle of wordsArrEle["contentSourceData"]) {
+                                    if (contentSourceDataEle.language === language) {
+                                        if (contentSourceDataEle.text.trim() === textSetEle) {
+                                            if (repeatCounter === 1) {
+                                                deleteFlag = true;
+                                                break;
+                                            } else {
+                                                repeatCounter++;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (deleteFlag === true) {
+
+                                    delete wordsArr[wordArrEleIndex];
+                                }
+                            }
+
+                        }
+                    }
+                }
+
+                wordsArr = wordsArr.filter(element => {
+                    return element !== undefined;
+                });
+
+            }
+
+            return { wordsArr: wordsArr };
+        } else if (language === "en") {
+            let wordsArr = [];
+            let cLevelQuery: any;
+
+            if (contentType.toLocaleLowerCase() === 'char') {
+                contentType = 'Word'
+            }
+
+            let contentQueryParam = [];
+
+            if (syllableCount !== undefined && Object.keys(syllableCount).length != 0) {
+                contentQueryParam.push({ syllableCount: syllableCount });
+            }
+
+            if (wordCount !== undefined && Object.keys(wordCount).length != 0) {
+                contentQueryParam.push({ wordCount: wordCount });
+            }
+
+            cLevelQuery = contentQueryParam;
+
+            let query: any = {};
+
+            query = {
+                "contentSourceData": {
+                    "$elemMatch": {
+                        "language": language,
+                    }
+                },
+                "contentType": contentType,
+            }
+
+            if (cLevelQuery !== undefined && cLevelQuery.length > 0) {
+                for (let cLevelQueryEle of cLevelQuery) {
+                    let ObjectKey = Object.keys(cLevelQueryEle)[0];
+                    query.contentSourceData["$elemMatch"][ObjectKey] = Object.values(cLevelQueryEle)[0]
+                }
+            }
+
+
+            if (syllableList !== undefined && syllableList.length > 0) {
+                query.contentSourceData["$elemMatch"]["phonemes"] = { "$in": syllableList }
+            }
+
+            if (contentId !== undefined) {
+                query.contentId = contentId;
+            }
+
+            if (collectionId !== undefined) {
+                query.collectionId = collectionId;
+            }
+
+            if (tags?.length > 0) {
+                query.tags = { $all: tags };
+            }
+
+            await this.content.aggregate([
+                {
+                    $addFields: {
+                        "contentSourceData": {
+                            $map: {
+                                input: "$contentSourceData",
+                                as: "elem",
+                                in: {
+                                    $mergeObjects: [
+                                        "$$elem",
+                                        {
+                                            "syllableCountArray": { $objectToArray: "$$elem.syllableCountMap" }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    $match: query
+                },
+                { $sample: { size: limit } }
+            ]).exec().then((doc) => {
+                for (let docEle of doc) {
+                    let matchedTokens = syllableList.filter(token => docEle.contentSourceData[0].phonemes.includes(token));
+                    wordsArr.push({ ...docEle, matchedChar: Array.from(new Set(matchedTokens)) });
+                }
+            })
+
+            return { wordsArr: wordsArr };
+        }
+
+    }
+
     async charNotPresent(tokenArr): Promise<any> {
         if (tokenArr.length !== 0) {
             let searchChar = tokenArr.join("");

@@ -300,6 +300,25 @@ export class contentController {
         }
     }
 
+    @Post('/getContentByFilters')
+    async getContentByFilters(@Res() response: FastifyReply, @Body() queryData: any) {
+        try {
+            let Batch: any = queryData.limit || 5;
+
+            const contentCollection = await this.contentService.searchByFilter(queryData?.syllableList, queryData?.syllableCount, queryData?.wordCount, queryData?.totalOrthoComplexity, queryData?.totalPhonicComplexity, queryData?.meanPhonicComplexity, queryData.language, queryData.contentType, parseInt(Batch), queryData?.contentId, queryData?.collectionId, queryData?.tags);
+            return response.status(HttpStatus.CREATED).send({
+                status: "success",
+                data: contentCollection,
+            });
+        } catch (error) {
+            console.log(error);
+            return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+                status: "error",
+                message: "Server error - " + error
+            });
+        }
+    }
+
     @Post('/getAssessment')
     async getAssessment(@Res() response: FastifyReply, @Body() queryData: any) {
         try {
