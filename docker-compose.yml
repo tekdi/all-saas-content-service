@@ -1,0 +1,17 @@
+version: '3'
+services:
+  content-service-app:
+    build:
+      context: .
+    ports:
+      - '3008:3008'
+    container_name: content-service
+    restart: always
+    networks:
+      - ai-network
+    environment:
+      - .env
+
+networks:
+  ai-network:
+    driver: bridge

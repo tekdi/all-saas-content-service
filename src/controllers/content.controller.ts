@@ -6,6 +6,7 @@ import { FastifyReply } from 'fastify';
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom, lastValueFrom, map } from "rxjs";
 import { ApiBody, ApiExcludeEndpoint, ApiForbiddenResponse, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import * as splitGraphemes from 'split-graphemes';
 
 @ApiTags('content')
 @Controller('content')
@@ -60,10 +61,24 @@ export class contentController {
                     delete newContent.result.meanWordComplexity;
                     delete newContent.result.totalWordComplexity;
                     delete newContent.result.wordComplexityMap;
+                    delete newContent.result.syllableCount;
+                    delete newContent.result.syllableCountMap;
+
+                    async function getSyllableCount(text) {
+                        return splitGraphemes.splitGraphemes(text.replace(/[\u200B\u200C\u200D\uFEFF\s!@#$%^&*()_+{}\[\]:;<>,.?\/\\|~'"-=]/g, '')).length;
+                    }
+
+                    let syllableCount = await getSyllableCount(contentSourceDataEle['text']);
+
+                    let syllableCountMap = {}
+
+                    for (let wordEle of contentSourceDataEle['text'].split(" ")) {
+                        syllableCountMap[wordEle] = await getSyllableCount(wordEle);
+                    }
 
                     newContent.result.wordMeasures = newWordMeasures;
 
-                    return { ...contentSourceDataEle, ...newContent.result };
+                    return { ...contentSourceDataEle, ...newContent.result, syllableCount: syllableCount, syllableCountMap: syllableCountMap };
                 } else if (contentSourceDataEle['language'] === "en") {
                     const url = process.env.ALL_TEXT_EVAL_URL + 'getPhonemes';
 
@@ -187,7 +202,20 @@ export class contentController {
         try {
             const skip = (page - 1) * limit;
             const { data } = await this.contentService.pagination(skip, limit, type, collectionId);
-            return response.status(HttpStatus.OK).send({ status: 'success', data });
+
+            let language = data[0].language;
+
+            let totalSyllableCount = 0;
+            if (language === "en") {
+                data.forEach((contentObject: any) => {
+                    totalSyllableCount += contentObject.contentSourceData[0].phonemes.length;
+                });
+            } else {
+                data.forEach((contentObject: any) => {
+                    totalSyllableCount += contentObject.contentSourceData[0].syllableCount;
+                });
+            }
+            return response.status(HttpStatus.OK).send({ status: 'success', data, totalSyllableCount: totalSyllableCount });
         } catch (error) {
             return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
                 status: "error",
