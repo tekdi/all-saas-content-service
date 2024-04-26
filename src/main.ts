@@ -7,23 +7,25 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
-
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter()
+    new FastifyAdapter(),
   );
 
-  app.useGlobalPipes(new ValidationPipe);
+  app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix('v1');
   app.enableCors({
-    origin: ["*"],
+    origin: ['*'],
     methods: ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: false,
   });
 
-  const config = new DocumentBuilder().setTitle('ALL Content Service')
-    .setDescription('All content service includes Storys , word, sentences texts to practice')
+  const config = new DocumentBuilder()
+    .setTitle('ALL Content Service')
+    .setDescription(
+      'All content service includes Storys , word, sentences texts to practice',
+    )
     .setVersion('v1')
     .addServer(process.env.SERVER_URL, 'ALL Content Service Server APIs')
     .build();
