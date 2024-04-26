@@ -59,4 +59,5 @@ jobs:
 
               docker pull ${{ secrets.CONTAINER_REGISTRY }}:${{ secrets.IMAGE_TAG }}
          
-              docker run -d --name ${{ secrets.CONTAINER_NAME }} --network ${{ secrets.NETWORK }} -p ${{ secrets.CONTAINER_PORT }} -t ${{ secrets.CONTAINER_REGISTRY }}:${{ secrets.IMAGE_TAG }} 
+              cd /home/alldevuser/all-services/all-content-service
+              docker-compose up -d --force-recreate --no-deps
