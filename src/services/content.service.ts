@@ -8,7 +8,7 @@ export class contentService {
   constructor(
     @InjectModel(content.name) private content: Model<contentDocument>,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   async create(content: content): Promise<content> {
     try {
@@ -528,20 +528,7 @@ export class contentService {
       let wordsArr = [];
       let query: any = {};
 
-      if (tags || tags.trim() !== '') {
-        query = {
-          contentSourceData: {
-            $elemMatch: {
-              text: {
-                $regex: startWithRegexPattern,
-              },
-              $and: [cLevelQuery, { $or: mileStoneQuery }],
-            },
-          },
-          contentType: contentType,
-          tags: { $all: tags },
-        };
-      } else if (contentType === 'char') {
+      if (contentType === 'char') {
         query = {
           contentSourceData: {
             $elemMatch: {
@@ -602,6 +589,12 @@ export class contentService {
             contentType: contentType,
           };
         }
+      }
+
+      console.log(tags);
+
+      if (tags?.length > 0) {
+        query.tags = { $all: tags };
       }
 
       query.contentSourceData.$elemMatch['language'] = language;
@@ -1022,7 +1015,7 @@ export class contentService {
         }
       }
 
-      const query = {
+      let query = {
         contentSourceData: {
           $elemMatch: {
             phonemes: { $in: tokenArr },
@@ -1031,6 +1024,10 @@ export class contentService {
         },
         contentType: contentType,
       };
+
+      if (tags?.length > 0) {
+        query["tags"] = { $all: tags };
+      }
 
       query.contentSourceData.$elemMatch['language'] = language;
 
