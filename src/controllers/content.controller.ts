@@ -25,7 +25,7 @@ export class contentController {
     private readonly contentService: contentService,
     private readonly collectionService: CollectionService,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   @Post()
   async create(@Res() response: FastifyReply, @Body() content: any) {
@@ -405,45 +405,57 @@ export class contentController {
     }
   }
 
+  @Post('/getContentByFilters')
+  async getContentByFilters(@Res() response: FastifyReply, @Body() queryData: any) {
+    try {
+      let Batch: any = queryData.limit || 5;
+
+      const contentCollection = await this.contentService.searchByFilter(queryData?.syllableList, queryData?.syllableCount, queryData?.wordCount, queryData?.totalOrthoComplexity, queryData?.totalPhonicComplexity, queryData?.meanPhonicComplexity, queryData.language, queryData.contentType, parseInt(Batch), queryData?.contentId, queryData?.collectionId, queryData?.tags);
+      return response.status(HttpStatus.CREATED).send({
+        status: "success",
+        data: contentCollection,
+      });
+    } catch (error) {
+      console.log(error);
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+        status: "error",
+        message: "Server error - " + error
+      });
+    }
+  }
+
   @Post('/getAssessment')
   async getAssessment(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
       let contentCollection;
 
-      if (queryData.tags.includes('ASER')) {
-        const collectionArr = [];
+      if (queryData.tags.includes("ASER")) {
+        let collectionArr = [];
         for (let setno = 1; setno <= 5; setno++) {
-          const tags = [];
+          let tags = [];
           tags.push(...queryData.tags);
-          tags.push('set' + setno);
-          const collection = await this.collectionService.getAssessment(
-            tags,
-            queryData.language,
-          );
+          tags.push("set" + setno);
+          let collection = await this.collectionService.getAssessment(tags, queryData.language);
           if (collection.data[0] != null) {
             collectionArr.push(collection.data[0]);
           }
         }
         contentCollection = {
           data: collectionArr,
-          status: 200,
+          status: 200
         };
       } else {
-        contentCollection = await this.collectionService.getAssessment(
-          queryData.tags,
-          queryData.language,
-        );
+        contentCollection = await this.collectionService.getAssessment(queryData.tags, queryData.language);
       }
 
       return response.status(HttpStatus.CREATED).send(contentCollection);
     } catch (error) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
-        status: 'error',
-        message: 'Server error - ' + error,
+        status: "error",
+        message: "Server error - " + error
       });
     }
   }
-
   @Post('/getContentForMileStone')
   async get(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
