@@ -6,6 +6,7 @@ import {
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppClusterService } from './app-cluster.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -35,4 +36,4 @@ async function bootstrap() {
 
   await app.listen(3008, '0.0.0.0');
 }
-bootstrap();
+AppClusterService.clusterize(bootstrap);
