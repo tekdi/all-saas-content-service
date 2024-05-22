@@ -16,14 +16,7 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
-  await app.register(compression,{
-    global: true,
-    zlibOptions: {
-      level: 6,
-    },
-    threshold: 512,
-    encodings: ['gzip', 'deflate']
-  });
+  await app.register(compression)
 
   app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix('v1');
