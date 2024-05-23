@@ -10,8 +10,10 @@ services:
     networks:
       - ai-network
     environment:
-      - .env
-
+      - MONGODB_URL=mongodb://MONGO:27017/all-content-respository
+      - ALL_LC_API_URL=https://lct-api.theall.ai/v1/language/tools/wordComplexity/
+      - SERVER_URL=https://www.learnerai-dev.theall.ai/content-service/
+      - ALL_TEXT_EVAL_URL=https://www.learnerai-dev.theall.ai/text-eval/
 networks:
   ai-network:
     driver: bridge
