@@ -11,7 +11,6 @@ services:
       - ai-network
     environment:
       - .env
-
 networks:
   ai-network:
     driver: bridge
