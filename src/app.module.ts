@@ -19,7 +19,19 @@ import { HttpModule } from '@nestjs/axios';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot(process.env.MONGODB_URL),
+
+    MongooseModule.forRootAsync({
+      useFactory: async () => ({
+        uri: process.env.MONGODB_URL,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        connectionFactory: (connection) => {
+          connection.set('poolSize', process.env.POOL_SIZE);
+          return connection;
+        },
+      }),
+    }),
+
     MongooseModule.forFeature([
       { name: content.name, schema: contentSchema },
       { name: collection.name, schema: collectionDbSchema },
