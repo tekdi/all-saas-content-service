@@ -50,15 +50,15 @@ export class CollectionService {
           language: language,
         },
       },
-      {
-        $lookup: {
-          from: 'content',
-          localField: 'collectionId',
-          foreignField: 'collectionId',
-          as: 'content',
-        },
-      },
       { $sample: { size: 1 } },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          category: 1,
+          collectionId:1
+        }
+      }
     ]);
     return {
       data: data,

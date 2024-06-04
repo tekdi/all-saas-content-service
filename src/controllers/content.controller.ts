@@ -264,9 +264,8 @@ export class contentController {
         type,
         collectionId,
       );
-
       const language = data[0].language;
-
+      
       let totalSyllableCount = 0;
       if (language === 'en') {
         data.forEach((contentObject: any) => {

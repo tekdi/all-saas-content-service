@@ -36,12 +36,33 @@ export class contentService {
     return await this.content.findByIdAndRemove(id);
   }
 
-  async pagination(skip = 0, limit = 5, type, collectionId) {
-    const data = await this.content
-      .find({ type: type, collectionId: collectionId })
-      .limit(limit)
-      .skip(skip)
-      .exec();
+  async pagination(skip, limit, type, collectionId) {
+    const limitValue = parseInt(limit);
+    const skipValue = parseInt(skip);
+    const data = await this.content.aggregate([
+      {
+        $match: {
+          collectionId: collectionId
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          contentType: 1,
+          contentId: 1,
+          language: 1,
+          "contentSourceData.text": 1,
+          "contentSourceData.phonemes": 1,
+          "contentSourceData.syllableCount": 1,
+        }
+      },
+      {
+        $skip: skipValue
+      },
+      {
+        $limit: limitValue
+      }
+    ]).exec();
     return {
       data: data,
       status: 200,
