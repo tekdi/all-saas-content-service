@@ -437,6 +437,8 @@ export class contentService {
         query["tags"] = { $all: tags };
       }
 
+      let contentDataSet = new Set();
+
       await this.content
         .aggregate([
           {
@@ -467,7 +469,10 @@ export class contentService {
         .exec()
         .then((doc) => {
           for (const docEle of doc) {
-            contentData.push(docEle);
+            if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+              contentDataSet.add(docEle.contentId);
+              contentData.push(docEle);
+            }
           }
         });
 
@@ -509,7 +514,10 @@ export class contentService {
         .exec()
         .then((doc) => {
           for (const docEle of doc) {
-            contentData.push(docEle);
+            if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+              contentDataSet.add(docEle.contentId);
+              contentData.push(docEle);
+            }
           }
         });
 
@@ -563,7 +571,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -606,7 +617,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -645,7 +659,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -705,7 +722,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -745,7 +765,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -986,6 +1009,8 @@ export class contentService {
 
       let contentData = [];
 
+      let contentDataSet = new Set();
+
       await this.content
         .aggregate([
           {
@@ -1016,7 +1041,10 @@ export class contentService {
         .exec()
         .then((doc) => {
           for (const docEle of doc) {
-            contentData.push(docEle);
+            if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+              contentDataSet.add(docEle.contentId);
+              contentData.push(docEle);
+            }
           }
         });
 
@@ -1053,7 +1081,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -1114,7 +1145,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
@@ -1153,7 +1187,10 @@ export class contentService {
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              contentData.push(docEle);
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
