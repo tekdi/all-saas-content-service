@@ -48,6 +48,11 @@ var en_config = {
             contentType: 'Sentence',
         },
         {
+            level: 'L3',
+            wordCount: { $lte: 10 },
+            contentType: 'Paragraph',
+        },
+        {
             level: 'L4',
             wordCount: { $gt: 5, $lte: 7 },
             syllableCount: { $lte: 20 },

@@ -653,6 +653,8 @@ export class contentService {
       // Lower word and syllable count
       if (contentData.length < limit) {
         contentQueryParam = [];
+        cLevelQuery = [];
+
         contentQueryParam.push(
           ...contentLevel.filter((contentLevelEle) => {
             return (
@@ -661,6 +663,15 @@ export class contentService {
             );
           }),
         );
+
+        contentQueryParam = JSON.parse(JSON.stringify(contentQueryParam));
+
+        for (let contentQueryParamEle of contentQueryParam) {
+          delete contentQueryParamEle.level;
+          delete contentQueryParamEle.contentType;
+          delete contentQueryParamEle.language;
+          cLevelQuery.push(contentQueryParamEle);
+        }
 
         query.contentSourceData.$elemMatch['$and'] = cLevelQuery;
 
@@ -1049,17 +1060,24 @@ export class contentService {
 
       // Lower Syllable and Word count level
       if (contentData.length <= limit) {
+        cLevelQuery = [];
 
-        cLevelQuery = contentLevel.filter((contentLevelEle) => {
+        for (let contentLevelEle of contentLevel) {
           if (contentLevelEle.level === prevContentLevel &&
             contentLevelEle.contentType === contentType) {
-            delete contentLevelEle.level;
-            delete contentLevelEle.contentType;
-            return contentLevelEle;
-          } else {
-            return false;
+            let contentLevelObj = {};
+            if (contentLevelEle.hasOwnProperty('syllableCount')) {
+              contentLevelObj['syllableCount'] = contentLevelEle.syllableCount;
+            }
+            if (contentLevelEle.hasOwnProperty('syllableCountArray')) {
+              contentLevelObj['syllableCountArray'] = contentLevelEle.syllableCountArray;
+            }
+            if (contentLevelEle.hasOwnProperty('wordCount')) {
+              contentLevelObj['wordCount'] = contentLevelEle.wordCount;
+            }
+            cLevelQuery.push(contentLevelObj);
           }
-        });
+        }
 
         if (cLevelQuery?.length > 0) {
           query.contentSourceData.$elemMatch['$and'] = cLevelQuery;
@@ -1141,42 +1159,42 @@ export class contentService {
       }
 
       // Remove content level
-      if (contentData.length <= limit) {
-        delete query.contentSourceData.$elemMatch['$and'];
-        await this.content
-          .aggregate([
-            {
-              $addFields: {
-                contentSourceData: {
-                  $map: {
-                    input: '$contentSourceData',
-                    as: 'elem',
-                    in: {
-                      $mergeObjects: [
-                        '$$elem',
-                        {
-                          syllableCountArray: {
-                            $objectToArray: '$$elem.syllableCountMap',
-                          },
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-            {
-              $match: query,
-            },
-            { $sample: { size: limit - contentData.length } },
-          ])
-          .exec()
-          .then((doc) => {
-            for (const docEle of doc) {
-              contentData.push(docEle);
-            }
-          });
-      }
+      // if (contentData.length <= limit) {
+      //   delete query.contentSourceData.$elemMatch['$and'];
+      //   await this.content
+      //     .aggregate([
+      //       {
+      //         $addFields: {
+      //           contentSourceData: {
+      //             $map: {
+      //               input: '$contentSourceData',
+      //               as: 'elem',
+      //               in: {
+      //                 $mergeObjects: [
+      //                   '$$elem',
+      //                   {
+      //                     syllableCountArray: {
+      //                       $objectToArray: '$$elem.syllableCountMap',
+      //                     },
+      //                   },
+      //                 ],
+      //               },
+      //             },
+      //           },
+      //         },
+      //       },
+      //       {
+      //         $match: query,
+      //       },
+      //       { $sample: { size: limit - contentData.length } },
+      //     ])
+      //     .exec()
+      //     .then((doc) => {
+      //       for (const docEle of doc) {
+      //         contentData.push(docEle);
+      //       }
+      //     });
+      // }
 
       for (let contentDataEle of contentData) {
         const matchedGraphemes = [];
