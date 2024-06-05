@@ -3,6 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { content, contentDocument } from '../schemas/content.schema';
 import { HttpService } from '@nestjs/axios';
+import en_config from 'src/config/language/en';
+import common_config from 'src/config/commonConfig';
+
 @Injectable()
 export class contentService {
   constructor(
@@ -36,12 +39,33 @@ export class contentService {
     return await this.content.findByIdAndRemove(id);
   }
 
-  async pagination(skip = 0, limit = 5, type, collectionId) {
-    const data = await this.content
-      .find({ type: type, collectionId: collectionId })
-      .limit(limit)
-      .skip(skip)
-      .exec();
+  async pagination(skip, limit, type, collectionId) {
+    const limitValue = parseInt(limit);
+    const skipValue = parseInt(skip);
+    const data = await this.content.aggregate([
+      {
+        $match: {
+          collectionId: collectionId
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          contentType: 1,
+          contentId: 1,
+          language: 1,
+          "contentSourceData.text": 1,
+          "contentSourceData.phonemes": 1,
+          "contentSourceData.syllableCount": 1,
+        }
+      },
+      {
+        $skip: skipValue
+      },
+      {
+        $limit: limitValue
+      }
+    ]).exec();
     return {
       data: data,
       status: 200,
@@ -295,177 +319,27 @@ export class contentService {
     complexityLevel,
     graphemesMappedObj,
   ): Promise<any> {
-    // if (tokenArr.length !== 0) {
+    let nextTokenArr = []
+    if (tokenArr.length >= (limit * 2)) {
+      nextTokenArr = tokenArr.slice(limit, limit * 2);
+    } else {
+      nextTokenArr = tokenArr.slice(limit, tokenArr.length);
+    }
+    tokenArr = tokenArr.slice(0, limit);
 
     if (language !== 'en') {
-      const mileStoneQuery = [];
-      let cLevelQuery: any;
+      let mileStoneQuery = [];
+      let cLevelQuery = [];
+      let prevContentLevel = '';
+      let contentQueryParam = [];
+      let complexityQueryParam = [];
+      let contentLevel = common_config.contentLevel;
+      let complexity = common_config.complexity;
 
       if (cLevel != '' || complexityLevel.length != 0) {
-        const contentLevel = [
-          {
-            level: 'L1',
-            syllableCount: { $eq: 2 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'L1',
-            wordCount: { $gte: 2, $lte: 3 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L2',
-            syllableCount: { $gte: 2, $lte: 3 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'L2',
-            wordCount: { $gte: 2, $lte: 3 },
-            syllableCount: { $lte: 8 },
-            syllableCountArray: {
-              $not: {
-                $elemMatch: {
-                  v: { $gte: 4 },
-                },
-              },
-            },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L3',
-            syllableCount: { $gte: 4 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'L3',
-            wordCount: { $gt: 2, $lte: 5 },
-            syllableCount: { $lte: 15 },
-            language: 'ta',
-            syllableCountArray: {
-              $not: {
-                $elemMatch: {
-                  v: { $gte: 5 },
-                },
-              },
-            },
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L4',
-            wordCount: { $gt: 5, $lte: 7 },
-            syllableCount: { $lte: 20 },
-            language: 'ta',
-            syllableCountArray: {
-              $not: {
-                $elemMatch: {
-                  v: { $gte: 7 },
-                },
-              },
-            },
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L4',
-            wordCount: { $lte: 10 },
-            language: 'ta',
-            contentType: 'Paragraph',
-          },
-          {
-            level: 'L5',
-            wordCount: { $gte: 7, $lte: 10 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L5',
-            wordCount: { $gt: 10, $lte: 15 },
-            language: 'ta',
-            contentType: 'Paragraph',
-          },
-          {
-            level: 'L6',
-            wordCount: { $gte: 7, $lte: 12 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L6',
-            wordCount: { $gt: 15 },
-            language: 'ta',
-            contentType: 'Paragraph',
-          },
-        ];
-
-        const complexity = [
-          {
-            level: 'C1',
-            totalOrthoComplexity: { $gte: 0, $lte: 2 },
-            totalPhonicComplexity: { $gte: 0, $lte: 30 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'C1',
-            totalOrthoComplexity: { $gte: 0, $lte: 75 },
-            totalPhonicComplexity: { $gte: 0, $lte: 20 },
-            meanComplexity: { $gte: 0, $lte: 50 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'C2',
-            totalOrthoComplexity: { $gte: 0, $lte: 8 },
-            totalPhonicComplexity: { $gte: 0, $lte: 60 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'C2',
-            totalOrthoComplexity: { $gte: 0, $lte: 20 },
-            totalPhonicComplexity: { $gte: 0, $lte: 100 },
-            meanComplexity: { $gte: 0, $lte: 50 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'C3',
-            totalOrthoComplexity: { $gte: 0, $lte: 15 },
-            totalPhonicComplexity: { $gte: 0, $lte: 100 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'C3',
-            totalOrthoComplexity: { $gte: 20, $lte: 50 },
-            totalPhonicComplexity: { $lte: 200 },
-            meanComplexity: { $gte: 50, $lte: 100 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'C4',
-            totalOrthoComplexity: { $gt: 15 },
-            totalPhonicComplexity: { $gt: 100 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'C4',
-            totalOrthoComplexity: { $gt: 50 },
-            totalPhonicComplexity: { $gt: 200 },
-            meanComplexity: { $gt: 100 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-        ];
-
-        const contentQueryParam = [];
-        const complexityQueryParam = [];
+        if (cLevel != "L1") {
+          prevContentLevel = "L" + (parseInt(cLevel[1]) - 1);
+        }
 
         contentQueryParam.push(
           ...contentLevel.filter((contentLevelEle) => {
@@ -476,6 +350,8 @@ export class contentService {
           }),
         );
 
+        contentQueryParam = JSON.parse(JSON.stringify(contentQueryParam));
+
         complexityQueryParam.push(
           ...complexity.filter((complexityEle) => {
             return (
@@ -485,11 +361,13 @@ export class contentService {
           }),
         );
 
-        for (const contentQueryParamEle of contentQueryParam) {
+        complexityQueryParam = JSON.parse(JSON.stringify(complexityQueryParam));
+
+        for (let contentQueryParamEle of contentQueryParam) {
           delete contentQueryParamEle.level;
           delete contentQueryParamEle.contentType;
           delete contentQueryParamEle.language;
-          cLevelQuery = contentQueryParamEle;
+          cLevelQuery.push(contentQueryParamEle);
         }
 
         for (const complexityQueryParamEle of complexityQueryParam) {
@@ -507,7 +385,6 @@ export class contentService {
       }
 
       const searchChar = tokenArr.join('|');
-
       const unicodeArray = [];
       for (const tokenArrEle of tokenArr) {
         let unicodeCombination = '';
@@ -518,7 +395,6 @@ export class contentService {
         }
         unicodeArray.push(unicodeCombination);
       }
-
       const startWithRegexPattern = new RegExp(`[${tokenArr.join('')}]`, 'gu');
       const inBetweenRegexPattern = new RegExp(`\\B(${searchChar})`, 'gu');
 
@@ -527,130 +403,143 @@ export class contentService {
 
       let wordsArr = [];
       let query: any = {};
+      let contentData = [];
 
-      if (contentType === 'char') {
-        query = {
-          contentSourceData: {
-            $elemMatch: {
-              text: {
-                $regex: startWithRegexPattern,
-              },
-              $and: [{ syllableCount: { $eq: 2 } }],
-            },
-          },
-          contentType: 'Word',
-        };
-      } else {
-        if (cLevelQuery === undefined && mileStoneQuery.length !== 0) {
-          query = {
-            contentSourceData: {
-              $elemMatch: {
-                text: {
-                  $regex: startWithRegexPattern,
-                },
-                $or: mileStoneQuery,
-              },
-            },
-            contentType: contentType,
-          };
-        } else if (mileStoneQuery.length === 0 && cLevelQuery !== undefined) {
-          query = {
-            contentSourceData: {
-              $elemMatch: {
-                text: {
-                  $regex: startWithRegexPattern,
-                },
-                $and: [cLevelQuery],
-              },
-            },
-            contentType: contentType,
-          };
-        } else if (mileStoneQuery.length === 0 && cLevelQuery === undefined) {
-          query = {
-            contentSourceData: {
-              $elemMatch: {
-                text: {
-                  $regex: startWithRegexPattern,
-                },
-              },
-            },
-            contentType: contentType,
-          };
-        } else {
-          query = {
-            contentSourceData: {
-              $elemMatch: {
-                text: {
-                  $regex: startWithRegexPattern,
-                },
-                $and: [cLevelQuery, { $or: mileStoneQuery }],
-              },
-            },
-            contentType: contentType,
-          };
-        }
+      if (contentType.toLocaleLowerCase() === 'char') {
+        contentType = 'Word';
       }
 
-      console.log(tags);
+      query = {
+        contentSourceData: {
+          $elemMatch: {
+          },
+        },
+        contentType: contentType,
+      };
 
-      if (tags?.length > 0) {
-        query.tags = { $all: tags };
+      if (tokenArr?.length > 0) {
+        query.contentSourceData.$elemMatch.text = {
+          '$regex': startWithRegexPattern
+        };
       }
 
       query.contentSourceData.$elemMatch['language'] = language;
 
-      if (tokenArr.length !== 0) {
-        await this.content
-          .aggregate([
-            {
-              $addFields: {
-                contentSourceData: {
-                  $map: {
-                    input: '$contentSourceData',
-                    as: 'elem',
-                    in: {
-                      $mergeObjects: [
-                        '$$elem',
-                        {
-                          syllableCountArray: {
-                            $objectToArray: '$$elem.syllableCountMap',
-                          },
+      if (cLevelQuery?.length > 0) {
+        query.contentSourceData.$elemMatch['$and'] = cLevelQuery;
+      }
+
+      if (mileStoneQuery?.length > 0) {
+        query.contentSourceData.$elemMatch['$or'] = mileStoneQuery;
+      }
+
+      if (tags?.length > 0) {
+        query["tags"] = { $all: tags };
+      }
+
+      let contentDataSet = new Set();
+
+      await this.content
+        .aggregate([
+          {
+            $addFields: {
+              contentSourceData: {
+                $map: {
+                  input: '$contentSourceData',
+                  as: 'elem',
+                  in: {
+                    $mergeObjects: [
+                      '$$elem',
+                      {
+                        syllableCountArray: {
+                          $objectToArray: '$$elem.syllableCountMap',
                         },
-                      ],
-                    },
+                      },
+                    ],
                   },
                 },
               },
             },
-            {
-              $match: query,
-            },
-            { $sample: { size: 10000 } },
-          ])
-          .exec()
-          .then((doc) => {
-            for (const docEle of doc) {
-              const regexMatchBegin = new RegExp(
-                `^(?=(${unicodeArray.join('|')}))`,
-                'gu',
-              );
-              const text: string = docEle.contentSourceData[0]['text'].trim();
-              const matchRes = text.match(regexMatchBegin);
-              if (matchRes != null) {
-                const matchedChar = text.match(
-                  new RegExp(`(${unicodeArray.join('|')})`, 'gu'),
-                );
-                wordsArr.push({ ...docEle, matchedChar: matchedChar });
-                if (wordsArr.length === batchLimitForStartWith) {
-                  break;
-                }
-              }
+          },
+          {
+            $match: query,
+          },
+          { $sample: { size: batchLimitForStartWith } },
+        ])
+        .exec()
+        .then((doc) => {
+          for (const docEle of doc) {
+            if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+              contentDataSet.add(docEle.contentId);
+              contentData.push(docEle);
             }
-          });
+          }
+        });
 
-        batchLimitForEndWith = Math.abs(wordsArr.length - limit);
+      batchLimitForEndWith = Math.abs(contentData.length - limit);
 
-        query.contentSourceData.$elemMatch.text = inBetweenRegexPattern;
+      if (tokenArr?.length > 0) {
+        query.contentSourceData.$elemMatch.text = {
+          '$regex': inBetweenRegexPattern
+        };
+      }
+
+      await this.content
+        .aggregate([
+          {
+            $addFields: {
+              contentSourceData: {
+                $map: {
+                  input: '$contentSourceData',
+                  as: 'elem',
+                  in: {
+                    $mergeObjects: [
+                      '$$elem',
+                      {
+                        syllableCountArray: {
+                          $objectToArray: '$$elem.syllableCountMap',
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          {
+            $match: query,
+          },
+          { $sample: { size: batchLimitForEndWith } },
+        ])
+        .exec()
+        .then((doc) => {
+          for (const docEle of doc) {
+            if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+              contentDataSet.add(docEle.contentId);
+              contentData.push(docEle);
+            }
+          }
+        });
+
+      // Add more targets tokens for content
+      if (contentData.length < limit) {
+
+        tokenArr.concat(nextTokenArr);
+        const searchChar = tokenArr.join('|');
+
+        for (const tokenArrEle of tokenArr) {
+          let unicodeCombination = '';
+          for (const [index, token] of tokenArrEle.split('').entries()) {
+            const unicodeValue = '\\' + 'u0' + token.charCodeAt(0).toString(16);
+            unicodeCombination += index !== 0 ? '+' : '';
+            unicodeCombination += unicodeValue;
+          }
+          unicodeArray.push(unicodeCombination);
+        }
+
+        const allCharRegexPattern = new RegExp(`\\B(${searchChar})`, 'gu');
+
+        query.contentSourceData.$elemMatch['text']['$regex'] = allCharRegexPattern;
 
         await this.content
           .aggregate([
@@ -677,22 +566,27 @@ export class contentService {
             {
               $match: query,
             },
-            { $sample: { size: batchLimitForEndWith } },
+            { $sample: { size: limit - contentData.length } },
           ])
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              const text: string = docEle.contentSourceData[0]['text'].trim();
-              const matchedChar = text.match(
-                new RegExp(`(${unicodeArray.join('|')})`, 'gu'),
-              );
-              wordsArr.push({ ...docEle, matchedChar: matchedChar });
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
 
-      if (wordsArr.length === 0) {
-        delete query.contentSourceData.$elemMatch.text;
+      // Remove Ortho complexity
+      if (contentData.length < limit) {
+        mileStoneQuery = mileStoneQuery.filter((mileStoneQueryEle) => {
+          return !mileStoneQueryEle.hasOwnProperty('totalOrthoComplexity');
+        });
+
+        query.contentSourceData.$elemMatch['$or'] = mileStoneQuery;
+
         await this.content
           .aggregate([
             {
@@ -718,14 +612,183 @@ export class contentService {
             {
               $match: query,
             },
-            { $sample: { size: limit } },
+            { $sample: { size: limit - contentData.length } },
           ])
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              wordsArr.push({ ...docEle, matchedChar: [] });
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
+      }
+
+      // Remove Phonic complexity
+      if (contentData.length < limit) {
+        delete query.contentSourceData.$elemMatch['$or']
+
+        await this.content
+          .aggregate([
+            {
+              $addFields: {
+                contentSourceData: {
+                  $map: {
+                    input: '$contentSourceData',
+                    as: 'elem',
+                    in: {
+                      $mergeObjects: [
+                        '$$elem',
+                        {
+                          syllableCountArray: {
+                            $objectToArray: '$$elem.syllableCountMap',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $match: query,
+            },
+            { $sample: { size: limit - contentData.length } },
+          ])
+          .exec()
+          .then((doc) => {
+            for (const docEle of doc) {
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
+            }
+          });
+      }
+
+      // Lower word and syllable count
+      if (contentData.length < limit) {
+        contentQueryParam = [];
+        cLevelQuery = [];
+
+        contentQueryParam.push(
+          ...contentLevel.filter((contentLevelEle) => {
+            return (
+              contentLevelEle.level === prevContentLevel &&
+              contentLevelEle.contentType === contentType
+            );
+          }),
+        );
+
+        contentQueryParam = JSON.parse(JSON.stringify(contentQueryParam));
+
+        for (let contentQueryParamEle of contentQueryParam) {
+          delete contentQueryParamEle.level;
+          delete contentQueryParamEle.contentType;
+          delete contentQueryParamEle.language;
+          cLevelQuery.push(contentQueryParamEle);
+        }
+
+        query.contentSourceData.$elemMatch['$and'] = cLevelQuery;
+
+        await this.content
+          .aggregate([
+            {
+              $addFields: {
+                contentSourceData: {
+                  $map: {
+                    input: '$contentSourceData',
+                    as: 'elem',
+                    in: {
+                      $mergeObjects: [
+                        '$$elem',
+                        {
+                          syllableCountArray: {
+                            $objectToArray: '$$elem.syllableCountMap',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $match: query,
+            },
+            { $sample: { size: limit - contentData.length } },
+          ])
+          .exec()
+          .then((doc) => {
+            for (const docEle of doc) {
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
+            }
+          });
+      }
+
+      // Remove tokens
+      if (contentData.length < limit) {
+
+        delete query.contentSourceData.$elemMatch['text'];
+
+        await this.content
+          .aggregate([
+            {
+              $addFields: {
+                contentSourceData: {
+                  $map: {
+                    input: '$contentSourceData',
+                    as: 'elem',
+                    in: {
+                      $mergeObjects: [
+                        '$$elem',
+                        {
+                          syllableCountArray: {
+                            $objectToArray: '$$elem.syllableCountMap',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $match: query,
+            },
+            { $sample: { size: limit - contentData.length } },
+          ])
+          .exec()
+          .then((doc) => {
+            for (const docEle of doc) {
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
+            }
+          });
+      }
+
+
+      for (let contentDataEle of contentData) {
+        const regexMatchBegin = new RegExp(
+          `^(?=(${unicodeArray.join('|')}))`,
+          'gu',
+        );
+        const text: string = contentDataEle.contentSourceData[0]['text'].trim();
+        const matchRes = text.match(regexMatchBegin);
+        if (matchRes != null) {
+          const matchedChar = text.match(
+            new RegExp(`(${unicodeArray.join('|')})`, 'gu'),
+          );
+          wordsArr.push({ ...contentDataEle, matchedChar: matchedChar });
+        } else {
+          wordsArr.push({ ...contentDataEle, matchedChar: [] });
+        }
       }
 
       const contentForToken = {};
@@ -770,7 +833,6 @@ export class contentService {
           }
         }
 
-        //console.log(wordsArr);
         wordsArr = wordsArr.filter((element) => {
           return element !== undefined;
         });
@@ -890,148 +952,64 @@ export class contentService {
       return { wordsArr: wordsArr, contentForToken: contentForToken };
     } else if (language === 'en') {
       const wordsArr = [];
-      let cLevelQuery: any;
+      let cLevelQuery = [];
+      let prevContentLevel = '';
+      const contentLevel = en_config.contentLevel;
 
       if (contentType.toLocaleLowerCase() === 'char') {
         contentType = 'Word';
       }
 
       if (cLevel != '') {
-        const contentLevel = [
-          {
-            level: 'L1',
-            syllableCount: { $gte: 2, $lte: 3 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'L1',
-            wordCount: { $gte: 2, $lte: 3 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L2',
-            syllableCount: { $eq: 4 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'L2',
-            wordCount: { $gte: 2, $lte: 3 },
-            syllableCount: { $lte: 8 },
-            syllableCountArray: {
-              $not: {
-                $elemMatch: {
-                  v: { $gte: 4 },
-                },
-              },
-            },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L3',
-            syllableCount: { $gt: 4 },
-            language: 'ta',
-            contentType: 'Word',
-          },
-          {
-            level: 'L3',
-            wordCount: { $gt: 2, $lte: 5 },
-            syllableCount: { $lte: 15 },
-            language: 'ta',
-            syllableCountArray: {
-              $not: {
-                $elemMatch: {
-                  v: { $gte: 5 },
-                },
-              },
-            },
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L4',
-            wordCount: { $gt: 5, $lte: 7 },
-            syllableCount: { $lte: 20 },
-            language: 'ta',
-            syllableCountArray: {
-              $not: {
-                $elemMatch: {
-                  v: { $gte: 7 },
-                },
-              },
-            },
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L4',
-            wordCount: { $lte: 10 },
-            language: 'ta',
-            contentType: 'Paragraph',
-          },
-          {
-            level: 'L5',
-            wordCount: { $gte: 7, $lte: 10 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L5',
-            wordCount: { $gt: 10, $lte: 15 },
-            language: 'ta',
-            contentType: 'Paragraph',
-          },
-          {
-            level: 'L6',
-            wordCount: { $gte: 7, $lte: 12 },
-            language: 'ta',
-            contentType: 'Sentence',
-          },
-          {
-            level: 'L6',
-            wordCount: { $gt: 15 },
-            language: 'ta',
-            contentType: 'Paragraph',
-          },
-        ];
+        if (cLevel != "L1") {
+          prevContentLevel = "L" + (parseInt(cLevel[1]) - 1);
+        }
 
-        const contentQueryParam = [];
-
-        contentQueryParam.push(
-          ...contentLevel.filter((contentLevelEle) => {
-            return (
-              contentLevelEle.level === cLevel &&
-              contentLevelEle.contentType === contentType
-            );
-          }),
-        );
-
-        for (const contentQueryParamEle of contentQueryParam) {
-          delete contentQueryParamEle.level;
-          delete contentQueryParamEle.contentType;
-          delete contentQueryParamEle.language;
-          cLevelQuery = contentQueryParamEle;
+        for (let contentLevelEle of contentLevel) {
+          if (contentLevelEle.level === cLevel &&
+            contentLevelEle.contentType === contentType) {
+            let contentLevelObj = {};
+            if (contentLevelEle.hasOwnProperty('syllableCount')) {
+              contentLevelObj['syllableCount'] = contentLevelEle.syllableCount;
+            }
+            if (contentLevelEle.hasOwnProperty('syllableCountArray')) {
+              contentLevelObj['syllableCountArray'] = contentLevelEle.syllableCountArray;
+            }
+            if (contentLevelEle.hasOwnProperty('wordCount')) {
+              contentLevelObj['wordCount'] = contentLevelEle.wordCount;
+            }
+            cLevelQuery.push(contentLevelObj);
+          }
         }
       }
 
       let query = {
         contentSourceData: {
           $elemMatch: {
-            phonemes: { $in: tokenArr },
-            $and: [cLevelQuery],
           },
         },
         contentType: contentType,
       };
 
+      query.contentSourceData.$elemMatch['language'] = en_config.language_code;
+
+      if (tokenArr?.length > 0) {
+        query.contentSourceData.$elemMatch['phonemes'] = { $in: tokenArr };
+      }
+
+      if (cLevelQuery?.length > 0) {
+        query.contentSourceData.$elemMatch['$and'] = cLevelQuery;
+      }
+
       if (tags?.length > 0) {
         query["tags"] = { $all: tags };
       }
 
-      query.contentSourceData.$elemMatch['language'] = language;
-
       const allTokenGraphemes = [];
+
+      let contentData = [];
+
+      let contentDataSet = new Set();
 
       await this.content
         .aggregate([
@@ -1063,20 +1041,121 @@ export class contentService {
         .exec()
         .then((doc) => {
           for (const docEle of doc) {
-            const matchedGraphemes = [];
-            const matchedTokens = tokenArr.filter((token) =>
-              docEle.contentSourceData[0].phonemes.includes(token),
-            );
-            for (const matchedTokensEle of matchedTokens) {
-              matchedGraphemes.push(...graphemesMappedObj[matchedTokensEle]);
-              allTokenGraphemes.push(...graphemesMappedObj[matchedTokensEle]);
+            if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+              contentDataSet.add(docEle.contentId);
+              contentData.push(docEle);
             }
-            wordsArr.push({ ...docEle, matchedChar: matchedGraphemes });
           }
         });
 
-      if (wordsArr.length === 0) {
-        delete query.contentSourceData.$elemMatch.phonemes;
+      // Add limit*2 tokens for search
+      if (contentData.length <= limit) {
+        tokenArr.concat(nextTokenArr);
+        await this.content
+          .aggregate([
+            {
+              $addFields: {
+                contentSourceData: {
+                  $map: {
+                    input: '$contentSourceData',
+                    as: 'elem',
+                    in: {
+                      $mergeObjects: [
+                        '$$elem',
+                        {
+                          syllableCountArray: {
+                            $objectToArray: '$$elem.syllableCountMap',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $match: query,
+            },
+            { $sample: { size: limit - contentData.length } },
+          ])
+          .exec()
+          .then((doc) => {
+            for (const docEle of doc) {
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
+            }
+          });
+      }
+
+      // Lower Syllable and Word count level
+      if (contentData.length <= limit) {
+        cLevelQuery = [];
+
+        for (let contentLevelEle of contentLevel) {
+          if (contentLevelEle.level === prevContentLevel &&
+            contentLevelEle.contentType === contentType) {
+            let contentLevelObj = {};
+            if (contentLevelEle.hasOwnProperty('syllableCount')) {
+              contentLevelObj['syllableCount'] = contentLevelEle.syllableCount;
+            }
+            if (contentLevelEle.hasOwnProperty('syllableCountArray')) {
+              contentLevelObj['syllableCountArray'] = contentLevelEle.syllableCountArray;
+            }
+            if (contentLevelEle.hasOwnProperty('wordCount')) {
+              contentLevelObj['wordCount'] = contentLevelEle.wordCount;
+            }
+            cLevelQuery.push(contentLevelObj);
+          }
+        }
+
+        if (cLevelQuery?.length > 0) {
+          query.contentSourceData.$elemMatch['$and'] = cLevelQuery;
+        }
+
+        // Fetch content with all constraints
+        await this.content
+          .aggregate([
+            {
+              $addFields: {
+                contentSourceData: {
+                  $map: {
+                    input: '$contentSourceData',
+                    as: 'elem',
+                    in: {
+                      $mergeObjects: [
+                        '$$elem',
+                        {
+                          syllableCountArray: {
+                            $objectToArray: '$$elem.syllableCountMap',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $match: query,
+            },
+            { $sample: { size: limit - contentData.length } },
+          ])
+          .exec()
+          .then((doc) => {
+            for (const docEle of doc) {
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
+            }
+          });
+      }
+
+      // Remove Tokens
+      if (contentData.length <= limit) {
+        delete query.contentSourceData.$elemMatch['phonemes'];
 
         await this.content
           .aggregate([
@@ -1103,18 +1182,72 @@ export class contentService {
             {
               $match: query,
             },
-            { $sample: { size: limit } },
+            { $sample: { size: limit - contentData.length } },
           ])
           .exec()
           .then((doc) => {
             for (const docEle of doc) {
-              wordsArr.push({ ...docEle, matchedChar: [] });
+              if (contentData.length == 0 || !contentDataSet.has(docEle.contentId)) {
+                contentDataSet.add(docEle.contentId);
+                contentData.push(docEle);
+              }
             }
           });
       }
 
-      const contentForToken = {};
+      // Remove content level
+      // if (contentData.length <= limit) {
+      //   delete query.contentSourceData.$elemMatch['$and'];
+      //   await this.content
+      //     .aggregate([
+      //       {
+      //         $addFields: {
+      //           contentSourceData: {
+      //             $map: {
+      //               input: '$contentSourceData',
+      //               as: 'elem',
+      //               in: {
+      //                 $mergeObjects: [
+      //                   '$$elem',
+      //                   {
+      //                     syllableCountArray: {
+      //                       $objectToArray: '$$elem.syllableCountMap',
+      //                     },
+      //                   },
+      //                 ],
+      //               },
+      //             },
+      //           },
+      //         },
+      //       },
+      //       {
+      //         $match: query,
+      //       },
+      //       { $sample: { size: limit - contentData.length } },
+      //     ])
+      //     .exec()
+      //     .then((doc) => {
+      //       for (const docEle of doc) {
+      //         contentData.push(docEle);
+      //       }
+      //     });
+      // }
 
+      for (let contentDataEle of contentData) {
+        const matchedGraphemes = [];
+        const matchedTokens = tokenArr.filter((token) =>
+          contentDataEle.contentSourceData[0].phonemes.includes(token),
+        );
+        for (const matchedTokensEle of matchedTokens) {
+          if (graphemesMappedObj[matchedTokensEle] != undefined) {
+            matchedGraphemes.push(...graphemesMappedObj[matchedTokensEle]);
+            allTokenGraphemes.push(...graphemesMappedObj[matchedTokensEle]);
+          }
+        }
+        wordsArr.push({ ...contentDataEle, matchedChar: matchedGraphemes });
+      }
+
+      const contentForToken = {};
       for (const allTokenGraphemesEle of allTokenGraphemes) {
         const contentForTokenArr = [];
         for (const wordsArrEle of wordsArr) {
@@ -1129,9 +1262,6 @@ export class contentService {
 
       return { wordsArr: wordsArr, contentForToken: contentForToken };
     }
-    // } else {
-    //     return {};
-    // }
   }
 
   async searchByFilter(syllableList, syllableCount, wordCount, totalOrthoComplexity, totalPhonicComplexity, meanComplexity, language, contentType, limit, contentId, collectionId, tags): Promise<any> {
