@@ -43,12 +43,14 @@ jobs:
       name: Deploy Stack
       uses: appleboy/ssh-action@master
       with:
-          host: ${{ secrets.HOST_STAGING }}
-          username: ${{ secrets.USERNAME_STAGING }}
-          key: ${{ secrets.SSH_PRIVATE_KEY_STAGING }}
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.PORT }}
           script: |
 
+             ssh -i ~/.ssh/all_staging_key.pem ${{ secrets.USERNAME_STAGING }}@${{ secrets.HOST_STAGING }} 'bash -s' << 'EOF'
+             
               docker login
 
               docker container stop ${{ secrets.CONTAINER_NAME }}
@@ -62,3 +64,8 @@ jobs:
               cd /home/all-staging-user/all-services/all-content-service
               
               sudo docker-compose up -d --force-recreate --no-deps
+
+              
+             EOF
+
+              
