@@ -15,8 +15,17 @@ import { CollectionService } from '../services/collection.service';
 import { FastifyReply } from 'fastify';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, map } from 'rxjs';
-import { ApiTags } from '@nestjs/swagger';
 import * as splitGraphemes from 'split-graphemes';
+import {
+  ApiBody,
+  ApiExcludeEndpoint,
+  ApiForbiddenResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('content')
 @Controller('content')
@@ -27,6 +36,115 @@ export class contentController {
     private readonly httpService: HttpService,
   ) { }
 
+  @ApiBody({
+    description: 'Request body for storing the data into the content',
+    schema: {
+      type: 'object',
+      properties: {
+        collectionId: { type: 'string', example: '3f0192af-0720-4248-b4d4-d99a9f731d4f' },
+        name: { type: 'string', example: 'tn gr2 eng t1 ch2d' },
+        contentType: { type: 'string', example: 'Sentence' },
+        contentSourceData: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              language: { type: 'string', example: 'en' },
+              audioUrl: { type: 'string', example: '' },
+              text: { type: 'string', example: 'Blue bird, blue bird, what do you see?' },
+            },
+          },
+        },
+        status: { type: 'string', example: 'live' },
+        publisher: { type: 'string', example: 'ekstep' },
+        language: { type: 'string', example: 'en' },
+        contentIndex: { type: 'number', example: 1 },
+        tags: { type: 'array', items: { type: 'string' }, example: [] },
+        imagePath: { type: 'string', example: 'image_2.jpg' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The content item has been successfully created.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'success' },
+        data: {
+          type: 'object',
+          properties: {
+            collectionId: { type: 'string', example: '3f0192af-0720-4248-b4d4-d99a9f731d4f' },
+            name: { type: 'string', example: 'tn gr2 eng t1 ch2d' },
+            contentType: { type: 'string', example: 'Sentence' },
+            imagePath: { type: 'string', example: 'image_2.jpg' },
+            contentSourceData: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  language: { type: 'string', example: 'en' },
+                  audioUrl: { type: 'string', example: '' },
+                  text: { type: 'string', example: 'Blue bird, blue bird, what do you see?' },
+                  phonemes: { type: 'array', items: { type: 'string' }, example: ['b', 'l', 'u', 'b', 'ə', 'r', 'd', ',', 'b', 'l', 'u', 'b', 'ə', 'r', 'd', ',', 'w', 'ə', 't', 'd', 'u', 'j', 'u', 's', 'i', '?'] },
+                  wordCount: { type: 'number', example: 8 },
+                  wordFrequency: {
+                    type: 'object',
+                    example: {
+                      blue: 2,
+                      bird: 2,
+                      what: 1,
+                      do: 1,
+                      you: 1,
+                      see: 1
+                    }
+                  },
+                  syllableCount: { type: 'number', example: 28 },
+                  syllableCountMap: {
+                    type: 'object',
+                    example: {
+                      blue: 4,
+                      bird: 4,
+                      what: 4,
+                      do: 2,
+                      you: 3,
+                      see: 3
+                    }
+                  }
+                }
+              }
+            },
+            status: { type: 'string', example: 'live' },
+            publisher: { type: 'string', example: 'ekstep' },
+            language: { type: 'string', example: 'en' },
+            contentIndex: { type: 'number', example: 1 },
+            tags: { type: 'array', items: { type: 'string' }, example: [] },
+            createdAt: { type: 'string', example: '2024-06-07T09:48:00.040Z' },
+            updatedAt: { type: 'string', example: '2024-06-07T09:48:00.040Z' },
+            _id: { type: 'string', example: '6662d7ff059b133df04db6e3' },
+            contentId: { type: 'string', example: 'fa853c29-bf19-417a-9661-c67d2671ebc1' },
+            __v: { type: 'number', example: 0 }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Error while data is being stored to the content table',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'error' },
+        msg: { type: 'string', example: 'Server error - error message' },
+      },
+    },
+  })
+  @ApiForbiddenResponse({ description: 'Forbidden.' })
+  @ApiOperation({
+    summary:
+      'Store the data into to the content table',
+  })
   @Post()
   async create(@Res() response: FastifyReply, @Body() content: any) {
     try {
@@ -201,7 +319,8 @@ export class contentController {
       });
     }
   }
-
+  
+  @ApiExcludeEndpoint(true)
   @Post('search')
   async searchContent(@Res() response: FastifyReply, @Body() tokenData: any) {
     try {
@@ -227,6 +346,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Post('charNotPresent')
   async charNotPresentContent(
     @Res() response: FastifyReply,
@@ -248,6 +368,71 @@ export class contentController {
     }
   }
 
+  @ApiQuery({
+    name: 'pagination',
+    description: 'Pagination parameters (page, limit, collectionId)',
+    required: true,
+    schema: {
+      properties: {
+        type:{ type: 'string', description: 'content type', example: 'word' },
+        page: { type: 'number', description: 'Page number', example: 1 },
+        limit: { type: 'number', description: 'Items per page', example: 10 },
+        collectionId: { type: 'string', description: 'ID of the collection', example: '3f0192af-0720-4248-b4d4-d99a9f731d4f' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The content is search by using the collection id limit and page criteria',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'success' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', example: '6662d7ff059b133df04db6e3' },
+              contentType: { type: 'string', example: 'Sentence' },
+              contentSourceData: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    text: { type: 'string', example: 'Blue bird, blue bird, what do you see?' },
+                    phonemes: {
+                      type: 'array',
+                      items: { type: 'string', example: ['b', 'l', 'u', 'b', 'ə', 'r'] }
+                    },
+                    syllableCount: { type: 'number', example: 28 }
+                  }
+                }
+              },
+              language: { type: 'string', example: 'en' },
+              contentId: { type: 'string', example: 'fa853c29-bf19-417a-9661-c67d2671ebc1' }
+            }
+          }
+        },
+        totalSyllableCount: { type: 'number', example: 26 }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Error while data is being stored to the content table',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'error' },
+        msg: { type: 'string', example: 'Server error - error message' },
+      },
+    },
+  })
+  @ApiOperation({
+    summary:
+      'Get the content data with the collection id with pageNo and limit',
+  })
   @Get('/pagination')
   async pagination(
     @Res() response: FastifyReply,
@@ -291,6 +476,100 @@ export class contentController {
     }
   }
 
+  @ApiQuery({
+    name: 'pagination',
+    description: 'Pagination parameters (page, limit, collectionId)',
+    required: true,
+    schema: {
+      properties: {
+        type:{ type: 'string', description: 'content type', example: 'word' },
+        language: { type: 'number', description: 'Page number', example: 1 },
+        limit: { type: 'number', description: 'Items per page', example: 10 }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The paginated content data has been successfully retrieved.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'success' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', example: '6662d7ff059b133df04db6e3' },
+              collectionId: { type: 'string', example: '3f0192af-0720-4248-b4d4-d99a9f731d4f' },
+              name: { type: 'string', example: 'tn gr2 eng t1 ch2d' },
+              contentType: { type: 'string', example: 'Sentence' },
+              imagePath: { type: 'string', example: 'image_2.jpg' },
+              contentSourceData: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    language: { type: 'string', example: 'en' },
+                    audioUrl: { type: 'string', example: '' },
+                    text: { type: 'string', example: 'Blue bird, blue bird, what do you see?' },
+                    phonemes: {
+                      type: 'array',
+                      items: { type: 'string', example: ['b', 'l', 'u', 'b', 'ə', 'r', 'd', ',', 'b', 'l', 'u', 'b', 'ə', 'r', 'd', ',', 'w', 'ə', 't', 'd', 'u', 'j', 'u', 's', 'i', '?'] }
+                    },
+                    wordCount: { type: 'number', example: 8 },
+                    wordFrequency: {
+                      type: 'object',
+                      example: {
+                        blue: 2,
+                        bird: 2,
+                        what: 1,
+                        do: 1,
+                        you: 1,
+                        see: 1
+                      }
+                    },
+                    syllableCount: { type: 'number', example: 28 },
+                    syllableCountMap: {
+                      type: 'object',
+                      example: {
+                        blue: 4,
+                        bird: 4,
+                        what: 4,
+                        do: 2,
+                        you: 3,
+                        see: 3
+                      }
+                    }
+                  }
+                }
+              },
+              status: { type: 'string', example: 'live' },
+              publisher: { type: 'string', example: 'ekstep' },
+              language: { type: 'string', example: 'en' },
+              contentIndex: { type: 'number', example: 1 },
+              tags: { type: 'array', items: { type: 'string' }, example: [] },
+              createdAt: { type: 'string', example: '2024-06-07T09:48:00.040Z' },
+              updatedAt: { type: 'string', example: '2024-06-07T09:48:00.040Z' },
+              contentId: { type: 'string', example: 'fa853c29-bf19-417a-9661-c67d2671ebc1' },
+              __v: { type: 'number', example: 0 }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Error while data is being stored to the content table',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'error' },
+        msg: { type: 'string', example: 'Server error - error message' },
+      },
+    },
+  })
   @Get('/getRandomContent')
   async getRandomContent(
     @Res() response: FastifyReply,
@@ -314,6 +593,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/getContentWord')
   async getContentWord(
     @Res() response: FastifyReply,
@@ -335,6 +615,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/getContentSentence')
   async getContentSentence(
     @Res() response: FastifyReply,
@@ -356,6 +637,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/getContentParagraph')
   async getContentParagraph(
     @Res() response: FastifyReply,
@@ -377,6 +659,231 @@ export class contentController {
     }
   }
 
+  @ApiBody({
+    description: 'Request body parameters for get content',
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        tokenArr: { 
+          type: 'array', 
+          description: 'Array of tokens', 
+          items: {
+            type: 'string',
+            example: 'c'
+          }
+        },
+        language: { 
+          type: 'string', 
+          description: 'Language code', 
+          example: 'en' 
+        },
+        contentType: { 
+          type: 'string', 
+          description: 'Type of content', 
+          example: 'Word' 
+        },
+        limit: { 
+          type: 'number', 
+          description: 'Limit on the number of items', 
+          example: 5 
+        },
+        cLevel: { 
+          type: 'string', 
+          description: 'Content level', 
+          example: 'L2' 
+        },
+        complexityLevel: { 
+          type: 'array', 
+          description: 'Array of complexity levels', 
+          items: {
+            type: 'string',
+            example: 'C1'
+          }
+        },
+        graphemesMappedObj: { 
+          type: 'object', 
+          description: 'Object mapping graphemes to their representations',
+          additionalProperties: {
+            type: 'array',
+            items: {
+              type: 'string',
+              example: 'ch'
+            }
+          },
+          example: {
+            "c": ["ch"],
+            "o": ["o"],
+            "a": ["a"],
+            "v": ["v", "ve"],
+            "w": ["w", "wh"],
+            "æ": ["a", "ai", "au"],
+            "n": ["n"],
+            "i": ["i"],
+            "θ": ["th"]
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful response',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'success' },
+        data: {
+          type: 'object',
+          properties: {
+            wordsArr: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string', example: '660f9545367a62b3902dd58b' },
+                  contentId: { type: 'string', example: 'f8dd7c97-53f7-4676-b597-4a52aaface5c' },
+                  collectionId: { type: 'string', example: '6a519951-8635-4d89-821a-d3eb60f6e1ec' },
+                  name: { type: 'string', example: 'L2_new_3' },
+                  contentType: { type: 'string', example: 'Word' },
+                  contentSourceData: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        language: { type: 'string', example: 'en' },
+                        audioUrl: { type: 'string', example: '' },
+                        text: { type: 'string', example: 'five' },
+                        phonemes: {
+                          type: 'array',
+                          items: { type: 'string', example: 'f' }
+                        },
+                        wordCount: { type: 'number', example: 1 },
+                        wordFrequency: {
+                          type: 'object',
+                          additionalProperties: { type: 'number', example: 1 }
+                        },
+                        syllableCount: { type: 'number', example: 4 },
+                        syllableCountMap: {
+                          type: 'object',
+                          additionalProperties: { type: 'number', example: 4 }
+                        },
+                        syllableCountArray: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              k: { type: 'string', example: 'five' },
+                              v: { type: 'number', example: 4 }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  status: { type: 'string', example: 'live' },
+                  publisher: { type: 'string', example: 'ekstep' },
+                  language: { type: 'string', example: 'en' },
+                  contentIndex: { type: 'number', example: 141 },
+                  tags: {
+                    type: 'array',
+                    items: { type: 'string' }
+                  },
+                  createdAt: { type: 'string', example: '2024-04-05T05:45:55.335Z' },
+                  updatedAt: { type: 'string', example: '2024-04-05T05:45:55.335Z' },
+                  __v: { type: 'number', example: 0 },
+                  matchedChar: {
+                    type: 'array',
+                    items: { type: 'string', example: 'v' }
+                  }
+                }
+              }
+            },
+            contentForToken: {
+              type: 'object',
+              additionalProperties: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    _id: { type: 'string', example: '660f9545367a62b3902dd58b' },
+                    contentId: { type: 'string', example: 'f8dd7c97-53f7-4676-b597-4a52aaface5c' },
+                    collectionId: { type: 'string', example: '6a519951-8635-4d89-821a-d3eb60f6e1ec' },
+                    name: { type: 'string', example: 'L2_new_3' },
+                    contentType: { type: 'string', example: 'Word' },
+                    contentSourceData: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          language: { type: 'string', example: 'en' },
+                          audioUrl: { type: 'string', example: '' },
+                          text: { type: 'string', example: 'five' },
+                          phonemes: {
+                            type: 'array',
+                            items: { type: 'string', example: 'f' }
+                          },
+                          wordCount: { type: 'number', example: 1 },
+                          wordFrequency: {
+                            type: 'object',
+                            additionalProperties: { type: 'number', example: 1 }
+                          },
+                          syllableCount: { type: 'number', example: 4 },
+                          syllableCountMap: {
+                            type: 'object',
+                            additionalProperties: { type: 'number', example: 4 }
+                          },
+                          syllableCountArray: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                k: { type: 'string', example: 'five' },
+                                v: { type: 'number', example: 4 }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    status: { type: 'string', example: 'live' },
+                    publisher: { type: 'string', example: 'ekstep' },
+                    language: { type: 'string', example: 'en' },
+                    contentIndex: { type: 'number', example: 141 },
+                    tags: {
+                      type: 'array',
+                      items: { type: 'string' }
+                    },
+                    createdAt: { type: 'string', example: '2024-04-05T05:45:55.335Z' },
+                    updatedAt: { type: 'string', example: '2024-04-05T05:45:55.335Z' },
+                    __v: { type: 'number', example: 0 },
+                    matchedChar: {
+                      type: 'array',
+                      items: { type: 'string', example: 'v' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Error while fetching data from the content table',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'error' },
+        msg: { type: 'string', example: 'Server error - error message' },
+      },
+    },
+  })
+  @ApiOperation({
+    summary: 'Get all data from the content table'
+  })
   @Post('/getContent')
   async getContent(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
@@ -404,6 +911,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Post('/getContentByFilters')
   async getContentByFilters(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
@@ -423,6 +931,65 @@ export class contentController {
     }
   }
 
+
+  @ApiBody({
+    description: 'Request body parameters',
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        tags: { 
+          type: 'array', 
+          description: 'Array of tags', 
+          items: {
+            type: 'string',
+            example: 'ASER'
+          }
+        },
+        language: { 
+          type: 'string', 
+          description: 'Language code', 
+          example: 'ta' 
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful response',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', example: '65e88b6cdee499a6209e739e' },
+              name: { type: 'string', example: '(மாதிறி -4)எழுத்து' },
+              category: { type: 'string', example: 'Char' },
+              collectionId: { type: 'string', example: 'ed47eb63-87c8-41f4-821d-1400fef37b78' }
+            }
+          }
+        },
+        status: { type: 'number', example: 200 }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Error while get the data from the content',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'error' },
+        msg: { type: 'string', example: 'Server error - error message' },
+      },
+    },
+  })
+  @ApiOperation({
+    summary: 'Get Assessments data'
+  })
   @Post('/getAssessment')
   async getAssessment(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
@@ -455,6 +1022,8 @@ export class contentController {
       });
     }
   }
+
+  @ApiExcludeEndpoint(true)
   @Post('/getContentForMileStone')
   async get(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
@@ -478,6 +1047,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get()
   async fatchAll(@Res() response: FastifyReply) {
     try {
@@ -491,6 +1061,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/:id')
   async findById(@Res() response: FastifyReply, @Param('id') id) {
     const content = await this.contentService.readById(id);
@@ -499,6 +1070,7 @@ export class contentController {
     });
   }
 
+  @ApiExcludeEndpoint(true)
   @Put('/:id')
   async update(
     @Res() response: FastifyReply,
@@ -651,6 +1223,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Delete('/:id')
   async delete(@Res() response: FastifyReply, @Param('id') id) {
     const deleted = await this.contentService.delete(id);
