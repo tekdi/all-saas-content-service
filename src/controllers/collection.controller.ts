@@ -27,6 +27,7 @@ import {
 export class CollectionController {
   constructor(private readonly CollectionService: CollectionService) { }
 
+  
   @ApiBody({
     description: 'Request body for storing data to collection',
     schema: {

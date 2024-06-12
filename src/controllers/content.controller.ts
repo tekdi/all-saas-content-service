@@ -320,6 +320,7 @@ export class contentController {
     }
   }
   
+  @ApiExcludeEndpoint(true)
   @Post('search')
   async searchContent(@Res() response: FastifyReply, @Body() tokenData: any) {
     try {
@@ -345,6 +346,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Post('charNotPresent')
   async charNotPresentContent(
     @Res() response: FastifyReply,
@@ -591,6 +593,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/getContentWord')
   async getContentWord(
     @Res() response: FastifyReply,
@@ -612,6 +615,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/getContentSentence')
   async getContentSentence(
     @Res() response: FastifyReply,
@@ -633,6 +637,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/getContentParagraph')
   async getContentParagraph(
     @Res() response: FastifyReply,
@@ -906,6 +911,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Post('/getContentByFilters')
   async getContentByFilters(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
@@ -1017,6 +1023,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Post('/getContentForMileStone')
   async get(@Res() response: FastifyReply, @Body() queryData: any) {
     try {
@@ -1040,6 +1047,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get()
   async fatchAll(@Res() response: FastifyReply) {
     try {
@@ -1053,6 +1061,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Get('/:id')
   async findById(@Res() response: FastifyReply, @Param('id') id) {
     const content = await this.contentService.readById(id);
@@ -1061,6 +1070,7 @@ export class contentController {
     });
   }
 
+  @ApiExcludeEndpoint(true)
   @Put('/:id')
   async update(
     @Res() response: FastifyReply,
@@ -1213,6 +1223,7 @@ export class contentController {
     }
   }
 
+  @ApiExcludeEndpoint(true)
   @Delete('/:id')
   async delete(@Res() response: FastifyReply, @Param('id') id) {
     const deleted = await this.contentService.delete(id);
