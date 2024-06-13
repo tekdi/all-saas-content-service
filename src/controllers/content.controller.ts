@@ -1048,18 +1048,27 @@ export class contentController {
   }
 
   @ApiExcludeEndpoint(true)
-  @Get()
-  async fatchAll(@Res() response: FastifyReply) {
+  async fetchAll(@Res() response: FastifyReply, @Query('page') page: number = 1, @Query('limit') limit: number = 20) {
     try {
-      const data = await this.contentService.readAll();
-      return response.status(HttpStatus.OK).send({ status: 'success', data });
+        const limitCount = limit;
+        const data = await this.contentService.readAll(page, limit);
+        const dataCount: any = await this.contentService.countAll();
+        const pageCount = Math.trunc(dataCount / limitCount);
+
+        return response.status(HttpStatus.OK).send({
+            status: 'success',
+            recordCount: dataCount,
+            pageCount: pageCount,
+            data
+        });
+
     } catch (error) {
-      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
-        status: 'error',
-        message: 'Server error - ' + error,
-      });
+        return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+            status: "error",
+            message: "Server error - " + error
+        });
     }
-  }
+}
 
   @ApiExcludeEndpoint(true)
   @Get('/:id')
