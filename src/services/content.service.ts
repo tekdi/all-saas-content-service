@@ -23,8 +23,13 @@ export class contentService {
     }
   }
 
-  async readAll(): Promise<content[]> {
-    return await this.content.find().exec();
+  async readAll(page: number, limit: number): Promise<content[]> {
+    const skip = (page - 1) * limit;
+    return this.content.find().skip(skip).limit(limit).exec();
+  }
+
+  async countAll(): Promise<number> {
+    return await this.content.countDocuments().exec();
   }
 
   async readById(id): Promise<content> {
