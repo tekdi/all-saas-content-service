@@ -1048,6 +1048,7 @@ export class contentController {
   }
 
   @ApiExcludeEndpoint(true)
+  @Get()
   async fetchAll(@Res() response: FastifyReply, @Query('page') page: number = 1, @Query('limit') limit: number = 20) {
     try {
       const limitCount = limit;
