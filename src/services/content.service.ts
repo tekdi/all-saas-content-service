@@ -782,9 +782,14 @@ export class contentService {
         const text: string = contentDataEle.contentSourceData[0]['text'].trim();
         const matchRes = text.match(regexMatchBegin);
         if (matchRes != null) {
-          const matchedChar = text.match(
-            new RegExp(`(${unicodeArray.join('|')})`, 'gu'),
-          );
+          let matchedChar = [];
+
+          if (unicodeArray.length != 0) {
+            matchedChar = text.match(
+              new RegExp(`(${unicodeArray.join('|')})`, 'gu'),
+            );
+          }
+
           wordsArr.push({ ...contentDataEle, matchedChar: matchedChar });
         } else {
           wordsArr.push({ ...contentDataEle, matchedChar: [] });
