@@ -5,7 +5,7 @@ Welcome to the Language Content Repository for the Sunbird-ALL project. This rep
 ## How to Use
 
 1. **Accessing Content:**
-   - Navigate to the [Language Content Folder](https://github.com/Sunbird-ALL/all-content-service/tree/main/Language%20content).
+   - Navigate to the [LanguageContent Folder](https://github.com/Sunbird-ALL/all-content-service/tree/main/LanguageContent).
    - Select the language folder you are interested in (e.g., Hindi, Kannada).
    - Explore the available content files.
 
