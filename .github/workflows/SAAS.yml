@@ -1,0 +1,27 @@
+name: SAAS Deployment
+
+on:
+  push:
+    branches:
+      - release-1.2
+jobs:
+   deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - 
+       name: Deploy Stack
+       uses: appleboy/ssh-action@master
+       with:
+        host: ${{ secrets.SAAS_HOST }}
+        username: ${{ secrets.SAAS_USERNAME }}
+        key: ${{ secrets.SAAS_SSH_PRIVATE_KEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+             
+             cd /home/ubuntu/all-services/all-content-service
+             ./deploy.sh
+             
