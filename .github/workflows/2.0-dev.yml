@@ -22,6 +22,6 @@ jobs:
         port: ${{ secrets.PORT }}
         script: |
              
-             cd /home/sudeepr/git/all-orchestration-service
+             cd /home/sudeepr/git/all-content-service
              ./deploy.sh
              
