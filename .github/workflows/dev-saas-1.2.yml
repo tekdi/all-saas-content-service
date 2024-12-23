@@ -1,9 +1,9 @@
-name: SAAS Deployment
+name: SAAS-Dev Deployment
 
 on:
   push:
     branches:
-      - release-1.2
+      - dev-saas-1.2
 jobs:
    deploy:
     runs-on: ubuntu-latest
@@ -16,10 +16,10 @@ jobs:
        name: Deploy Stack
        uses: appleboy/ssh-action@master
        with:
-        host: ${{ secrets.SAAS_HOST }}
-        username: ${{ secrets.SAAS_USERNAME }}
-        key: ${{ secrets.SAAS_SSH_PRIVATE_KEY }}
-        port: ${{ secrets.PORT }}
+        host: ${{ secrets.SAAS_HOST_DEV }}
+        username: ${{ secrets.SAAS_USERNAME_DEV }}
+        key: ${{ secrets.SAAS_SSH_PRIVATE_KEY_DEV }}
+        port: ${{ secrets.PORT_DEV }}
         script: |
              
              cd /home/ubuntu/all-services/all-content-service
