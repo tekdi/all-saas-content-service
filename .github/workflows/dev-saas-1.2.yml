@@ -15,9 +15,10 @@ jobs:
         with:
           fetch-depth: 0  # Disable shallow clones for better analysis
 
-      - name: Verify repository files
+      - name: Verify the working directory
         run: |
-          ls -l /home/ubuntu/all-saas-services/all-saas-content-service-parent
+          pwd  # Print current working directory
+          ls -l  # List files in the current working directory
 
       - name: Deploy Stack
         uses: appleboy/ssh-action@master
@@ -27,6 +28,6 @@ jobs:
           key: ${{ secrets.SAAS_SSH_PRIVATE_KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            cd /home/ubuntu/all-saas-services/all-saas-content-service-parent
-            ls -l # List files to verify the presence of deploy.sh
+            cd ./all-saas-services/all-saas-content-service-parent  # Use relative path
+            ls -l  # List files to verify the presence of deploy.sh
             ./deploy.sh
