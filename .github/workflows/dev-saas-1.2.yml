@@ -19,10 +19,10 @@ jobs:
       - name: Deploy Stack
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SAAS_HOST_DEV }}
-          username: ${{ secrets.SAAS_USERNAME_DEV }}
-          key: ${{ secrets.SAAS_SSH_PRIVATE_KEY_DEV }}
-          port: ${{ secrets.PORT_DEV }}
+          host: ${{ secrets.SAAS_HOST }}
+          username: ${{ secrets.SAAS_USERNAME }}
+          key: ${{ secrets.SAAS_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PORT }}
           script: |
             cd /home/ubuntu/all-orchestration-service
             ./deploy.sh
