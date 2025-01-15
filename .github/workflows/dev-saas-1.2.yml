@@ -1,4 +1,3 @@
-
 name: SAAS-Dev Deployment
 
 on:
@@ -16,6 +15,10 @@ jobs:
         with:
           fetch-depth: 0  # Disable shallow clones for better analysis
 
+      - name: Verify repository files
+        run: |
+          ls -l /home/ubuntu/all-saas-services/all-saas-content-service-parent
+
       - name: Deploy Stack
         uses: appleboy/ssh-action@master
         with:
@@ -25,4 +28,5 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /home/ubuntu/all-saas-services/all-saas-content-service-parent
+            ls -l # List files to verify the presence of deploy.sh
             ./deploy.sh
